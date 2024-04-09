@@ -1,0 +1,86 @@
+version: '3.3'
+services:
+  typebot-db:
+    image: postgres:13
+    restart: always
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=typebot
+      - POSTGRES_PASSWORD=typebot
+
+  typebot-builder:
+    ports:
+      - 3001:3000
+    image: baptistearno/typebot-builder:latest
+    restart: always
+    depends_on:
+      - typebot-db
+    environment:
+      - DATABASE_URL=postgresql://postgres:typebot@typebot-db:5432/typebot
+      - NEXTAUTH_URL=https://SEU-ENDERECO-IP-AQUI
+      - NEXT_PUBLIC_VIEWER_URL=https://SEU-ENDERECO-IP-AQUI
+      - ENCRYPTION_SECRET=SECRET-KEY-AQUI
+      - ADMIN_EMAIL=EMAIL-ADMINISTRADOR
+      - SMTP_HOST=SMTP-EMAIL-AQUI
+      - SMTP_USERNAME=ENDERECO-EMAIL-AQUI
+      - SMTP_PASSWORD=SENHA-EMAIL-AQUI
+      - SMTP_AUTH_DISABLED=false
+      - SMTP_PORT=PORTA-AQUI
+      - SMTP_SECURE=true
+      - NEXT_PUBLIC_SMTP_FROM=ENDERECO-EMAIL-AQUI
+      - S3_ACCESS_KEY=minio
+      - S3_SECRET_KEY=minio123
+      - S3_BUCKET=typebot
+      - S3_ENDPOINT=storage.seudominio.com.br
+
+  typebot-viewer:
+    ports:
+      - 3002:3000
+    image: baptistearno/typebot-viewer:latest
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:typebot@typebot-db:5432/typebot
+      - NEXT_PUBLIC_VIEWER_URL=https://SEU-ENDERECO-IP-AQUI
+      - NEXTAUTH_URL=https://SEU-ENDERECO-IP-AQUI
+      - ENCRYPTION_SECRET=SECRET-KEY-AQUI
+      - S3_ACCESS_KEY=minio
+      - S3_SECRET_KEY=minio123
+      - S3_BUCKET=typebot
+      - S3_ENDPOINT=storage.seudominio.com.br
+
+  mail:
+    image: bytemark/smtp
+    restart: always
+
+  minio:
+    labels:
+      virtual.host: 'storage.seudominio.com.br'
+      virtual.port: '9000'
+      virtual.tls-email: 'ENDERECO-EMAIL-AQUI'
+    image: minio/minio
+    command: server /data
+    ports:
+      - '9000:9000'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    volumes:
+      - s3_data:/data
+
+  createbuckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc config host add minio http://minio:9000 minio minio123;
+      /usr/bin/mc mb minio/typebot;
+      /usr/bin/mc anonymous set public minio/typebot/public;
+      exit 0;
+      "
+
+volumes:
+  db_data:
+  s3_data:
