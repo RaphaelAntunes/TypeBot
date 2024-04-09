@@ -8,7 +8,7 @@ sudo apt update && sudo apt upgrade && apt install docker-compose && sudo apt up
 ```
 Clone o repositorio
 ```bash
-git clone https://github.com/RaphaelAntunes/TypeBot-.git
+git clone https://github.com/RaphaelAntunes/TypeBot.git
 ```
 
 Insira o comando para criar uma chave criptografada e salve-a
